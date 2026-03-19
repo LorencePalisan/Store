@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
@@ -14,6 +14,7 @@ import POS from "./pages/POS";
 import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
 import Landing from "./pages/Landing";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -58,8 +59,8 @@ function App() {
             />
           </Route>
 
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
