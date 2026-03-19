@@ -131,7 +131,44 @@ export default function UserManagement() {
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
           Active Users ({activeUsers.length})
         </h2>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Mobile User Cards */}
+        <div className="md:hidden space-y-3">
+          {activeUsers.map((u) => (
+            <div
+              key={u.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
+              <div className="flex justify-between items-start">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 break-all">
+                    {u.email}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Joined {u.created_at.toLocaleDateString()}
+                  </p>
+                </div>
+                <span className="capitalize text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2 shrink-0">
+                  {u.role}
+                </span>
+              </div>
+              {u.id !== appUser?.id && (
+                <div className="mt-3">
+                  <select
+                    value={u.role}
+                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="manager">Manager</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop User Table */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>

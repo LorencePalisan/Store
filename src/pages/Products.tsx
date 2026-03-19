@@ -144,7 +144,7 @@ export default function Products() {
               setForm(emptyProduct);
               setShowForm(true);
             }}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
           >
             + Add Product
           </button>
@@ -258,90 +258,148 @@ export default function Products() {
         </div>
       )}
 
-      {/* Product Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Image</th>
-                <th className="text-left px-4 py-3 font-medium">Name</th>
-                <th className="text-left px-4 py-3 font-medium">Category</th>
-                <th className="text-right px-4 py-3 font-medium">Price</th>
-                <th className="text-right px-4 py-3 font-medium">Stock</th>
-                {canEdit && (
-                  <th className="text-right px-4 py-3 font-medium">Actions</th>
+      {/* Mobile Product Cards */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 text-center py-8 text-gray-400">
+            No products found.
+          </div>
+        ) : (
+          filtered.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
+              <div className="flex gap-3">
+                {p.image_url ? (
+                  <img
+                    src={p.image_url}
+                    alt={p.name}
+                    className="w-14 h-14 rounded object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded bg-gray-100 flex items-center justify-center text-gray-400 text-xs shrink-0">
+                    N/A
+                  </div>
                 )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={canEdit ? 6 : 5}
-                    className="text-center py-8 text-gray-400"
-                  >
-                    No products found.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      {p.image_url ? (
-                        <img
-                          src={p.image_url}
-                          alt={p.name}
-                          className="w-10 h-10 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                          N/A
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {p.name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {p.category || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{p.name}</p>
+                  <p className="text-xs text-gray-500">{p.category || "—"}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-sm font-semibold text-gray-900">
                       ₱{p.price.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={
-                          p.stock <= 5
-                            ? "text-red-600 font-semibold"
-                            : "text-gray-900"
-                        }
-                      >
-                        {p.stock}
-                      </span>
-                    </td>
-                    {canEdit && (
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="text-blue-600 hover:text-blue-800 text-xs font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          className="text-red-600 hover:text-red-800 text-xs font-medium"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${p.stock <= 5 ? "text-red-600" : "text-gray-500"}`}
+                    >
+                      Stock: {p.stock}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {canEdit && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => openEdit(p)}
+                    className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium rounded-lg transition"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium rounded-lg transition"
+                  >
+                    Delete
+                  </button>
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Product Table */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium">Image</th>
+              <th className="text-left px-4 py-3 font-medium">Name</th>
+              <th className="text-left px-4 py-3 font-medium">Category</th>
+              <th className="text-right px-4 py-3 font-medium">Price</th>
+              <th className="text-right px-4 py-3 font-medium">Stock</th>
+              {canEdit && (
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
+              )}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {filtered.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={canEdit ? 6 : 5}
+                  className="text-center py-8 text-gray-400"
+                >
+                  No products found.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="w-10 h-10 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                        N/A
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {p.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {p.category || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    ₱{p.price.toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span
+                      className={
+                        p.stock <= 5
+                          ? "text-red-600 font-semibold"
+                          : "text-gray-900"
+                      }
+                    >
+                      {p.stock}
+                    </span>
+                  </td>
+                  {canEdit && (
+                    <td className="px-4 py-3 text-right space-x-2">
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

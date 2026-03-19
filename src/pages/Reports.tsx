@@ -81,7 +81,7 @@ export default function Reports() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {(["day", "week", "month"] as const).map((p) => (
             <button
               key={p}
@@ -131,48 +131,77 @@ export default function Reports() {
         </button>
       </div>
 
-      {/* Sales Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+      {/* Mobile Sale Cards */}
+      <div className="md:hidden space-y-3">
+        {sales.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 text-center py-8 text-gray-400">
+            No sales for this period.
+          </div>
+        ) : (
+          sales.map((s) => (
+            <div
+              key={s.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-xs text-gray-500">
+                  {s.created_at.toLocaleString()}
+                </p>
+                <span className="text-sm font-semibold text-green-700 ml-2 shrink-0">
+                  ₱{s.total_amount.toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">
+                {s.created_by_email || "—"}
+              </p>
+              <p className="text-sm text-gray-900">
+                {s.products.map((p) => `${p.name} ×${p.quantity}`).join(", ")}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Sales Table */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium">Date</th>
+              <th className="text-left px-4 py-3 font-medium">Sold By</th>
+              <th className="text-left px-4 py-3 font-medium">Items</th>
+              <th className="text-right px-4 py-3 font-medium">Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {sales.length === 0 ? (
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Date</th>
-                <th className="text-left px-4 py-3 font-medium">Sold By</th>
-                <th className="text-left px-4 py-3 font-medium">Items</th>
-                <th className="text-right px-4 py-3 font-medium">Total</th>
+                <td colSpan={4} className="text-center py-8 text-gray-400">
+                  No sales for this period.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sales.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-400">
-                    No sales for this period.
+            ) : (
+              sales.map((s) => (
+                <tr key={s.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-500">
+                    {s.created_at.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {s.created_by_email || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-900">
+                    {s.products
+                      .map((p) => `${p.name} ×${p.quantity}`)
+                      .join(", ")}
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-green-700">
+                    ₱{s.total_amount.toFixed(2)}
                   </td>
                 </tr>
-              ) : (
-                sales.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-500">
-                      {s.created_at.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {s.created_by_email || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-900">
-                      {s.products
-                        .map((p) => `${p.name} ×${p.quantity}`)
-                        .join(", ")}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-green-700">
-                      ₱{s.total_amount.toFixed(2)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
