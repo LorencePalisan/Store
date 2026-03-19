@@ -134,11 +134,18 @@ export default function UserManagement() {
         {/* Mobile User Cards */}
         <div className="md:hidden space-y-3">
           {activeUsers.map((u) => (
-            <div key={u.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div
+              key={u.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
               <div className="flex justify-between items-start">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 break-all">{u.email}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Joined {u.created_at.toLocaleDateString()}</p>
+                  <p className="text-sm font-medium text-gray-900 break-all">
+                    {u.email}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Joined {u.created_at.toLocaleDateString()}
+                  </p>
                 </div>
                 <span className="capitalize text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2 shrink-0">
                   {u.role}
@@ -180,7 +187,9 @@ export default function UserManagement() {
                       {u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{u.created_at.toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {u.created_at.toLocaleDateString()}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     {u.id !== appUser?.id && (
                       <select

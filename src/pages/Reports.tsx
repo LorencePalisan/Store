@@ -139,14 +139,21 @@ export default function Reports() {
           </div>
         ) : (
           sales.map((s) => (
-            <div key={s.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div
+              key={s.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
               <div className="flex justify-between items-start mb-1">
-                <p className="text-xs text-gray-500">{s.created_at.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">
+                  {s.created_at.toLocaleString()}
+                </p>
                 <span className="text-sm font-semibold text-green-700 ml-2 shrink-0">
                   ₱{s.total_amount.toFixed(2)}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mb-1">{s.created_by_email || "—"}</p>
+              <p className="text-xs text-gray-500 mb-1">
+                {s.created_by_email || "—"}
+              </p>
               <p className="text-sm text-gray-900">
                 {s.products.map((p) => `${p.name} ×${p.quantity}`).join(", ")}
               </p>
@@ -176,10 +183,16 @@ export default function Reports() {
             ) : (
               sales.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-500">{s.created_at.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.created_by_email || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {s.created_at.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {s.created_by_email || "—"}
+                  </td>
                   <td className="px-4 py-3 text-gray-900">
-                    {s.products.map((p) => `${p.name} ×${p.quantity}`).join(", ")}
+                    {s.products
+                      .map((p) => `${p.name} ×${p.quantity}`)
+                      .join(", ")}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-green-700">
                     ₱{s.total_amount.toFixed(2)}

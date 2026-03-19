@@ -266,7 +266,10 @@ export default function Products() {
           </div>
         ) : (
           filtered.map((p) => (
-            <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div
+              key={p.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
               <div className="flex gap-3">
                 {p.image_url ? (
                   <img
@@ -283,8 +286,12 @@ export default function Products() {
                   <p className="font-medium text-gray-900 truncate">{p.name}</p>
                   <p className="text-xs text-gray-500">{p.category || "—"}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm font-semibold text-gray-900">₱{p.price.toFixed(2)}</span>
-                    <span className={`text-xs font-medium ${p.stock <= 5 ? "text-red-600" : "text-gray-500"}`}>
+                    <span className="text-sm font-semibold text-gray-900">
+                      ₱{p.price.toFixed(2)}
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${p.stock <= 5 ? "text-red-600" : "text-gray-500"}`}
+                    >
                       Stock: {p.stock}
                     </span>
                   </div>
@@ -352,11 +359,23 @@ export default function Products() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{p.category || "—"}</td>
-                  <td className="px-4 py-3 text-right text-gray-900">₱{p.price.toFixed(2)}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {p.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {p.category || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    ₱{p.price.toFixed(2)}
+                  </td>
                   <td className="px-4 py-3 text-right">
-                    <span className={p.stock <= 5 ? "text-red-600 font-semibold" : "text-gray-900"}>
+                    <span
+                      className={
+                        p.stock <= 5
+                          ? "text-red-600 font-semibold"
+                          : "text-gray-900"
+                      }
+                    >
                       {p.stock}
                     </span>
                   </td>
