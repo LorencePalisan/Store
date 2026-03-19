@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isApproved() {
+      return getUserData().status == 'approved';
+    }
+
+    function hasRole(role) {
+      return getUserData().role == role;
+    }
+
+    function isOwner() {
+      return hasRole('owner');
+    }
+
+    function isManager() {
+      return hasRole('manager');
+    }
+
+    function belongsToStore(storeId) {
+      return getUserData().store_id == storeId;
+    }
+
+    // ── STORES ──
+    match /stores/{storeId} {
+      // Any approved user in this store can read
+      allow read: if isSignedIn() && isApproved() && belongsToStore(storeId);
+      // First user creates the store during registration
+      allow create: if isSignedIn();
+      // Only the owner can update store details
+      allow update: if isSignedIn() && isApproved() && isOwner() && belongsToStore(storeId);
+      allow delete: if false;
+    }
+
+    // ── USERS ──
+    match /users/{userId} {
+      // Users can read their own doc; owner can read store members and pending users
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId ||
+        (isApproved() && isOwner() && belongsToStore(resource.data.store_id)) ||
+        (isApproved() && isOwner() && resource.data.store_id == '' && resource.data.status == 'pending')
+      );
+      // A user can only create their own document (during registration)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Owner can approve/reject users (including pending with empty store_id); first user can claim ownership
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && resource.data.status in ['setup', 'pending'] && resource.data.store_id == '') ||
+        (isApproved() && isOwner() && belongsToStore(resource.data.store_id)) ||
+        (isApproved() && isOwner() && resource.data.store_id == '' && resource.data.status == 'pending')
+      );
+      allow delete: if false;
+    }
+
+    // ── PRODUCTS ──
+    match /products/{productId} {
+      // Any approved user in the store can read products
+      allow read: if isSignedIn() && isApproved() && belongsToStore(resource.data.store_id);
+      // Owner and manager can create products in their store
+      allow create: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(request.resource.data.store_id);
+      // Owner and manager can update/delete products in their store
+      allow update: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(resource.data.store_id);
+      allow delete: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(resource.data.store_id);
+    }
+
+    // ── CATEGORIES ──
+    match /categories/{categoryId} {
+      allow read: if isSignedIn() && isApproved() && belongsToStore(resource.data.store_id);
+      allow create: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(request.resource.data.store_id);
+      allow delete: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(resource.data.store_id);
+      allow update: if false;
+    }
+
+    // ── SALES ──
+    match /sales/{saleId} {
+      // Any approved user in the store can view sales
+      allow read: if isSignedIn() && isApproved() && belongsToStore(resource.data.store_id);
+      // Owner and manager can create sales in their store
+      allow create: if isSignedIn() && isApproved()
+        && (isOwner() || isManager())
+        && belongsToStore(request.resource.data.store_id);
+      // Sales are immutable — no updates or deletes
+      allow update, delete: if false;
+    }
+
+    // ── METADATA ──
+    match /metadata/{docId} {
+      // Any signed-in user can read (needed to check if store setup is complete)
+      allow read: if isSignedIn();
+      // Only created during store setup (by the first user)
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "project_name": "Web Store Management",
+  "description": "A role-based store management system with POS, product tracking, sales analytics, and user approval workflow built using Firebase free tier services.",
+
+  "tech_stack": {
+    "frontend": ["Vite", "React", "TypeScript", "Tailwind CSS"],
+    "backend": ["Firebase"],
+    "services": {
+      "authentication": "Firebase Auth",
+      "database": "Firestore",
+      "analytics": "Firebase Analytics",
+      "storage": "Not used (external image hosting instead)"
+    }
+  },
+
+  "theme": {
+    "primary_color": "#16A34A",
+    "secondary_color": "#22C55E",
+    "accent_color": "#4ADE80",
+    "dark_color": "#166534",
+    "ui_style": "modern, minimal, responsive, fast POS-friendly UI"
+  },
+
+  "authentication": {
+    "method": "email_password",
+    "logic": {
+      "first_user": "auto_create_store_and_assign_owner",
+      "subsequent_users": "set_status_pending"
+    }
+  },
+
+  "roles": {
+    "owner": {
+      "permissions": [
+        "full_access",
+        "approve_or_reject_users",
+        "assign_roles",
+        "manage_store",
+        "view_reports"
+      ]
+    },
+    "manager": {
+      "permissions": [
+        "view_products",
+        "create_update_products",
+        "add_sales",
+        "view_reports"
+      ]
+    },
+    "viewer": {
+      "permissions": ["view_products", "view_sales"]
+    }
+  },
+
+  "user_flow": {
+    "signup": [
+      "user_registers",
+      "check_if_store_exists",
+      "if_not_create_store_and_assign_owner",
+      "else_mark_user_as_pending"
+    ],
+    "approval_process": [
+      "owner_views_pending_users",
+      "approve_or_reject_user",
+      "assign_role_manager_or_viewer"
+    ]
+  },
+
+  "pages": [
+    {
+      "name": "Store Dashboard",
+      "features": [
+        "sales_summary_cards",
+        "daily_sales",
+        "weekly_sales",
+        "monthly_sales",
+        "net_sales",
+        "recent_activity_feed",
+        "sales_chart_visualization"
+      ]
+    },
+    {
+      "name": "Products",
+      "features": [
+        "product_listing",
+        "top_3_best_selling_products",
+        "filter_by_day_week_month",
+        "search_functionality",
+        "category_filter",
+        "low_stock_alert",
+        "image_display_from_url"
+      ]
+    },
+    {
+      "name": "POS",
+      "features": [
+        "fast_product_search",
+        "click_to_add_cart",
+        "quantity_controls",
+        "live_total_calculation",
+        "checkout_system",
+        "keyboard_shortcuts",
+        "minimal_click_flow"
+      ]
+    },
+    {
+      "name": "Reports",
+      "features": [
+        "sales_records_table",
+        "date_range_filter",
+        "daily_weekly_monthly_reports",
+        "export_to_csv",
+        "summary_totals"
+      ]
+    },
+    {
+      "name": "User Management",
+      "features": [
+        "pending_users_list",
+        "approve_reject_actions",
+        "assign_roles",
+        "active_users_list"
+      ]
+    }
+  ],
+
+  "database_schema": {
+    "users": {
+      "id": "string",
+      "email": "string",
+      "role": "owner | manager | viewer",
+      "status": "pending | approved | rejected",
+      "store_id": "string",
+      "created_at": "timestamp"
+    },
+    "stores": {
+      "id": "string",
+      "name": "string",
+      "owner_id": "string",
+      "created_at": "timestamp"
+    },
+    "products": {
+      "id": "string",
+      "store_id": "string",
+      "name": "string",
+      "price": "number",
+      "stock": "number",
+      "category": "string",
+      "image_url": "string",
+      "created_at": "timestamp"
+    },
+    "sales": {
+      "id": "string",
+      "store_id": "string",
+      "products": [
+        {
+          "product_id": "string",
+          "quantity": "number",
+          "price": "number"
+        }
+      ],
+      "total_amount": "number",
+      "created_by": "user_id",
+      "created_at": "timestamp"
+    }
+  },
+
+  "storage_strategy": {
+    "firebase_storage": false,
+    "image_handling": "external_hosting",
+    "recommended_services": ["Cloudinary", "ImageKit"],
+    "store_only_image_url_in_firestore": true
+  },
+
+  "reports": {
+    "generation": "client_side",
+    "formats": ["csv"],
+    "storage": "none"
+  },
+
+  "receipts": {
+    "type": "dynamic_generation",
+    "features": ["print_receipt", "download_receipt"]
+  },
+
+  "security_rules": {
+    "owner": "full_access_to_store_data",
+    "manager": "read_write_products_and_sales",
+    "viewer": "read_only_access"
+  },
+
+  "performance_optimization": {
+    "pagination": true,
+    "limit_firestore_reads": true,
+    "avoid_excessive_realtime_listeners": true,
+    "cache_products_for_pos": true
+  },
+
+  "extra_features": [
+    "low_stock_notifications",
+    "sales_trend_charts",
+    "audit_logs",
+    "dark_mode_support",
+    "mobile_responsive_design"
+  ],
+
+  "scalability": {
+    "multi_store_ready": true,
+    "store_id_used_in_all_collections": true
+  }
+}
