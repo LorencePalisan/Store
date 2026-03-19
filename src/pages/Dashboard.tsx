@@ -118,10 +118,10 @@ export default function Dashboard() {
             sales.slice(0, 10).map((sale) => (
               <div
                 key={sale.id}
-                className="px-6 py-4 flex items-center justify-between"
+                className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
                     {sale.products.length} item
                     {sale.products.length !== 1 ? "s" : ""}
                   </p>
@@ -129,7 +129,7 @@ export default function Dashboard() {
                     {sale.created_at.toLocaleString()}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-green-700">
+                <span className="text-sm font-semibold text-green-700 shrink-0">
                   ₱
                   {sale.total_amount.toLocaleString("en", {
                     minimumFractionDigits: 2,

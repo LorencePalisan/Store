@@ -145,7 +145,7 @@ export default function POS() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-7rem)]">
+    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)] lg:h-[calc(100vh-7rem)]">
       {/* Product Grid */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="mb-4">
@@ -200,7 +200,7 @@ export default function POS() {
       </div>
 
       {/* Cart */}
-      <div className="lg:w-96 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+      <div className="lg:w-96 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col max-h-[50vh] lg:max-h-none">
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Cart</h2>
         </div>
