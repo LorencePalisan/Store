@@ -11,11 +11,13 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import type { Category } from "../types";
 import { Trash2 } from "lucide-react";
 
 export default function Categories() {
   const { appUser } = useAuth();
+  const { showToast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -77,17 +79,24 @@ export default function Categories() {
       });
       setName("");
       await fetchCategories();
+      showToast(`"${trimmed}" category added.`);
     } catch {
       setError("Failed to add category.");
+      showToast("Failed to add category.", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, catName: string) => {
     if (!confirm("Delete this category?")) return;
-    await deleteDoc(doc(db, "categories", id));
-    fetchCategories();
+    try {
+      await deleteDoc(doc(db, "categories", id));
+      showToast(`"${catName}" deleted.`, "info");
+      fetchCategories();
+    } catch {
+      showToast("Failed to delete category.", "error");
+    }
   };
 
   if (loading) {
@@ -182,7 +191,7 @@ export default function Categories() {
                 </span>
                 {canEdit && (
                   <button
-                    onClick={() => handleDelete(c.id)}
+                    onClick={() => handleDelete(c.id, c.name)}
                     className="text-gray-400 hover:text-red-600 transition"
                   >
                     <Trash2 size={16} />

@@ -9,10 +9,12 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import type { AppUser } from "../types";
 
 export default function UserManagement() {
   const { appUser } = useAuth();
+  const { showToast } = useToast();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,21 +56,28 @@ export default function UserManagement() {
     setLoading(false);
   };
 
-  const handleApprove = async (userId: string) => {
+  const handleApprove = async (userId: string, email: string) => {
     await updateDoc(doc(db, "users", userId), {
       status: "approved",
       store_id: appUser!.store_id,
     });
+    showToast(`${email} approved.`);
     fetchUsers();
   };
 
-  const handleReject = async (userId: string) => {
+  const handleReject = async (userId: string, email: string) => {
     await updateDoc(doc(db, "users", userId), { status: "rejected" });
+    showToast(`${email} rejected.`, "info");
     fetchUsers();
   };
 
-  const handleRoleChange = async (userId: string, role: string) => {
+  const handleRoleChange = async (
+    userId: string,
+    role: string,
+    email: string,
+  ) => {
     await updateDoc(doc(db, "users", userId), { role });
+    showToast(`${email} role set to ${role}.`);
     fetchUsers();
   };
 
@@ -108,13 +117,13 @@ export default function UserManagement() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleApprove(u.id)}
+                    onClick={() => handleApprove(u.id, u.email)}
                     className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => handleReject(u.id)}
+                    onClick={() => handleReject(u.id, u.email)}
                     className="px-4 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition"
                   >
                     Reject
@@ -155,7 +164,9 @@ export default function UserManagement() {
                 <div className="mt-3">
                   <select
                     value={u.role}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                    onChange={(e) =>
+                      handleRoleChange(u.id, e.target.value, u.email)
+                    }
                     className="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="manager">Manager</option>
@@ -194,7 +205,9 @@ export default function UserManagement() {
                     {u.id !== appUser?.id && (
                       <select
                         value={u.role}
-                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                        onChange={(e) =>
+                          handleRoleChange(u.id, e.target.value, u.email)
+                        }
                         className="text-sm border border-gray-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-green-500"
                       >
                         <option value="manager">Manager</option>
@@ -225,7 +238,7 @@ export default function UserManagement() {
                   <p className="text-sm font-medium text-gray-500">{u.email}</p>
                 </div>
                 <button
-                  onClick={() => handleApprove(u.id)}
+                  onClick={() => handleApprove(u.id, u.email)}
                   className="px-4 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium rounded-lg transition"
                 >
                   Re-approve

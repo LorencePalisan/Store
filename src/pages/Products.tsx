@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import type { Product, Category } from "../types";
 
 const emptyProduct = {
@@ -24,6 +25,7 @@ const emptyProduct = {
 
 export default function Products() {
   const { appUser } = useAuth();
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,34 +75,45 @@ export default function Products() {
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
-    if (editing) {
-      await updateDoc(doc(db, "products", editing.id), {
-        name: form.name,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        category: form.category,
-        image_url: form.image_url,
-      });
-    } else {
-      const ref = doc(collection(db, "products"));
-      await setDoc(ref, {
-        ...form,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        store_id: appUser!.store_id,
-        created_at: serverTimestamp(),
-      });
+    try {
+      if (editing) {
+        await updateDoc(doc(db, "products", editing.id), {
+          name: form.name,
+          price: Number(form.price),
+          stock: Number(form.stock),
+          category: form.category,
+          image_url: form.image_url,
+        });
+        showToast(`"${form.name}" updated successfully.`);
+      } else {
+        const ref = doc(collection(db, "products"));
+        await setDoc(ref, {
+          ...form,
+          price: Number(form.price),
+          stock: Number(form.stock),
+          store_id: appUser!.store_id,
+          created_at: serverTimestamp(),
+        });
+        showToast(`"${form.name}" added successfully.`);
+      }
+      setShowForm(false);
+      setEditing(null);
+      setForm(emptyProduct);
+      fetchProducts();
+    } catch {
+      showToast("Failed to save product.", "error");
     }
-    setShowForm(false);
-    setEditing(null);
-    setForm(emptyProduct);
-    fetchProducts();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm("Delete this product?")) return;
-    await deleteDoc(doc(db, "products", id));
-    fetchProducts();
+    try {
+      await deleteDoc(doc(db, "products", id));
+      showToast(`"${name}" deleted.`, "info");
+      fetchProducts();
+    } catch {
+      showToast("Failed to delete product.", "error");
+    }
   };
 
   const openEdit = (p: Product) => {
@@ -306,7 +319,7 @@ export default function Products() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => handleDelete(p.id, p.name)}
                     className="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium rounded-lg transition"
                   >
                     Delete
@@ -388,7 +401,7 @@ export default function Products() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(p.id)}
+                        onClick={() => handleDelete(p.id, p.name)}
                         className="text-red-600 hover:text-red-800 text-xs font-medium"
                       >
                         Delete

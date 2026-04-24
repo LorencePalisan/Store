@@ -13,10 +13,12 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import type { Product, CartItem } from "../types";
 
 export default function POS() {
   const { appUser } = useAuth();
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
@@ -120,6 +122,7 @@ export default function POS() {
 
       setCart([]);
       setCash("");
+      showToast("Sale completed successfully!");
     } finally {
       setProcessing(false);
     }
