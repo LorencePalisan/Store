@@ -3,6 +3,11 @@
   publish = "dist"
 
 [[redirects]]
+  from = "/api/imagekit-auth"
+  to = "/.netlify/functions/imagekit-auth"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
