@@ -303,7 +303,7 @@ export default function POS() {
                     key={p.id}
                     onClick={() => addToCart(p)}
                     disabled={p.stock <= 0}
-                    className={`text-left p-3 rounded-xl border transition ${
+                    className={`text-left rounded-xl border transition overflow-hidden ${
                       p.stock <= 0
                         ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
                         : "border-gray-200 bg-white hover:border-green-400 hover:shadow-sm active:scale-[0.98]"
@@ -313,25 +313,27 @@ export default function POS() {
                       <img
                         src={p.image_url}
                         alt={p.name}
-                        className="w-full h-20 object-cover rounded-lg mb-2"
+                        className="w-full h-32 object-scale-down"
                       />
                     ) : (
-                      <div className="w-full h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300 text-xs">
+                      <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
                         No image
                       </div>
                     )}
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {p.name}
-                    </p>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm font-semibold text-green-700">
-                        ₱{p.price.toFixed(2)}
-                      </span>
-                      <span
-                        className={`text-xs ${p.stock <= 5 ? "text-red-500" : "text-gray-400"}`}
-                      >
-                        Stock: {p.stock}
-                      </span>
+                    <div className="p-2.5">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {p.name}
+                      </p>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-sm font-semibold text-green-700">
+                          ₱{p.price.toFixed(2)}
+                        </span>
+                        <span
+                          className={`text-xs ${p.stock <= 5 ? "text-red-500" : "text-gray-400"}`}
+                        >
+                          Stock: {p.stock}
+                        </span>
+                      </div>
                     </div>
                   </button>
                 ))
