@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, ArrowLeft, Tag } from "lucide-react";
 import {
   collection,
   query,
@@ -14,12 +14,14 @@ import {
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
-import type { Product, CartItem } from "../types";
+import type { Product, CartItem, Category } from "../types";
 
 export default function POS() {
   const { appUser } = useAuth();
   const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,21 +31,37 @@ export default function POS() {
 
   useEffect(() => {
     if (!appUser?.store_id) return;
-    const fetchProducts = async () => {
-      const q = query(
-        collection(db, "products"),
-        where("store_id", "==", appUser.store_id),
-      );
-      const snap = await getDocs(q);
-      const data = snap.docs.map((d) => ({
+    const fetchData = async () => {
+      const [productSnap, categorySnap] = await Promise.all([
+        getDocs(
+          query(
+            collection(db, "products"),
+            where("store_id", "==", appUser.store_id),
+          ),
+        ),
+        getDocs(
+          query(
+            collection(db, "categories"),
+            where("store_id", "==", appUser.store_id),
+          ),
+        ),
+      ]);
+      const data = productSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
         created_at: d.data().created_at?.toDate?.() ?? new Date(),
       })) as Product[];
       setProducts(data);
+      const cats = categorySnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        created_at: d.data().created_at?.toDate?.() ?? new Date(),
+      })) as Category[];
+      cats.sort((a, b) => a.name.localeCompare(b.name));
+      setCategories(cats);
       setLoading(false);
     };
-    fetchProducts();
+    fetchData();
   }, [appUser?.store_id]);
 
   const addToCart = useCallback((product: Product) => {
@@ -133,19 +151,43 @@ export default function POS() {
     if (cart.length === 1) setCartOpen(true);
   }, [cart.length]);
 
-  // Keyboard shortcut: Enter to checkout
+  // Keyboard shortcuts: Ctrl+Enter to checkout, Backspace to go back to categories
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Enter" && e.ctrlKey && cart.length > 0) {
         handleCheckout();
       }
+      if (
+        e.key === "Backspace" &&
+        selectedCategory !== null &&
+        (document.activeElement === document.body ||
+          document.activeElement?.tagName === "BUTTON")
+      ) {
+        setSelectedCategory(null);
+        setSearch("");
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [cart, processing]);
+  }, [cart, processing, selectedCategory]);
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()),
+  const filteredProducts = products.filter((p) => {
+    const matchesCategory =
+      selectedCategory === null
+        ? false
+        : selectedCategory === "__uncategorized__"
+          ? !p.category || p.category.trim() === ""
+          : p.category === selectedCategory;
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  // Products that don't belong to any known category
+  const uncategorizedProducts = products.filter(
+    (p) =>
+      !p.category ||
+      p.category.trim() === "" ||
+      !categories.some((c) => c.name === p.category),
   );
 
   if (loading) {
@@ -160,55 +202,143 @@ export default function POS() {
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)] lg:h-[calc(100vh-7rem)]">
       {/* Product Grid */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search products... (click to add)"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
-            autoFocus
-          />
-        </div>
-        <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
-          {filteredProducts.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => addToCart(p)}
-              disabled={p.stock <= 0}
-              className={`text-left p-3 rounded-xl border transition ${
-                p.stock <= 0
-                  ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
-                  : "border-gray-200 bg-white hover:border-green-400 hover:shadow-sm active:scale-[0.98]"
-              }`}
-            >
-              {p.image_url ? (
-                <img
-                  src={p.image_url}
-                  alt={p.name}
-                  className="w-full h-20 object-cover rounded-lg mb-2"
-                />
-              ) : (
-                <div className="w-full h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300 text-xs">
-                  No image
-                </div>
-              )}
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {p.name}
-              </p>
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-sm font-semibold text-green-700">
-                  ₱{p.price.toFixed(2)}
-                </span>
-                <span
-                  className={`text-xs ${p.stock <= 5 ? "text-red-500" : "text-gray-400"}`}
+        {selectedCategory === null ? (
+          /* ── Category Cards ── */
+          <div className="flex-1 overflow-auto">
+            <p className="text-sm text-gray-500 mb-3">
+              Select a category to browse products
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
+              {categories.map((cat) => {
+                const count = products.filter(
+                  (p) => p.category === cat.name,
+                ).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategory(cat.name);
+                      setSearch("");
+                    }}
+                    className="text-left p-4 rounded-xl border border-gray-200 bg-white hover:border-green-400 hover:shadow-sm active:scale-[0.98] transition flex flex-col gap-2"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+                      <Tag size={18} className="text-green-600" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 leading-tight">
+                      {cat.name}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {count} product{count !== 1 ? "s" : ""}
+                    </p>
+                  </button>
+                );
+              })}
+              {uncategorizedProducts.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedCategory("__uncategorized__");
+                    setSearch("");
+                  }}
+                  className="text-left p-4 rounded-xl border border-gray-200 bg-white hover:border-green-400 hover:shadow-sm active:scale-[0.98] transition flex flex-col gap-2"
                 >
-                  Stock: {p.stock}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Tag size={18} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                    Uncategorized
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {uncategorizedProducts.length} product
+                    {uncategorizedProducts.length !== 1 ? "s" : ""}
+                  </p>
+                </button>
+              )}
+              {categories.length === 0 &&
+                uncategorizedProducts.length === 0 && (
+                  <p className="col-span-full text-center text-gray-400 text-sm py-12">
+                    No products available.
+                  </p>
+                )}
+            </div>
+          </div>
+        ) : (
+          /* ── Products under selected category ── */
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearch("");
+                }}
+                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-green-700 font-medium transition"
+              >
+                <ArrowLeft size={16} />
+                Categories
+              </button>
+              <span className="text-gray-300">/</span>
+              <span className="text-sm font-semibold text-gray-900">
+                {selectedCategory === "__uncategorized__"
+                  ? "Uncategorized"
+                  : selectedCategory}
+              </span>
+            </div>
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
+              />
+            </div>
+            <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
+              {filteredProducts.length === 0 ? (
+                <p className="col-span-full text-center text-gray-400 text-sm py-12">
+                  No products found.
+                </p>
+              ) : (
+                filteredProducts.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    disabled={p.stock <= 0}
+                    className={`text-left p-3 rounded-xl border transition ${
+                      p.stock <= 0
+                        ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
+                        : "border-gray-200 bg-white hover:border-green-400 hover:shadow-sm active:scale-[0.98]"
+                    }`}
+                  >
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="w-full h-20 object-cover rounded-lg mb-2"
+                      />
+                    ) : (
+                      <div className="w-full h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300 text-xs">
+                        No image
+                      </div>
+                    )}
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {p.name}
+                    </p>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm font-semibold text-green-700">
+                        ₱{p.price.toFixed(2)}
+                      </span>
+                      <span
+                        className={`text-xs ${p.stock <= 5 ? "text-red-500" : "text-gray-400"}`}
+                      >
+                        Stock: {p.stock}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Cart */}

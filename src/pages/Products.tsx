@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import {
   collection,
   query,
@@ -34,6 +35,12 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyProduct);
+  const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const canEdit = appUser?.role === "owner" || appUser?.role === "manager";
 
@@ -42,6 +49,19 @@ export default function Products() {
     fetchProducts();
     fetchCategories();
   }, [appUser?.store_id]);
+
+  useEffect(() => {
+    if (showCamera && !capturedImage && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => undefined);
+    }
+  }, [showCamera, capturedImage]);
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
 
   const fetchCategories = async () => {
     const q = query(
@@ -126,6 +146,104 @@ export default function Products() {
       image_url: p.image_url,
     });
     setShowForm(true);
+  };
+
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      setCapturedImage(null);
+      setShowCamera(true);
+    } catch {
+      showToast("Cannot access camera.", "error");
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setShowCamera(false);
+    setCapturedImage(null);
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    setCapturedImage(canvas.toDataURL("image/jpeg", 0.85));
+  };
+
+  const uploadToImageKit = async (file: File | string): Promise<string> => {
+    const authRes = await fetch("/api/imagekit-auth");
+    if (!authRes.ok) throw new Error("Auth failed");
+    const auth = (await authRes.json()) as {
+      token: string;
+      expire: number;
+      signature: string;
+    };
+
+    const formData = new FormData();
+    if (typeof file === "string") {
+      formData.append("file", file);
+      formData.append("fileName", `product_${Date.now()}.jpg`);
+    } else {
+      formData.append("file", file);
+      formData.append("fileName", file.name);
+    }
+    formData.append(
+      "publicKey",
+      import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY as string,
+    );
+    formData.append("signature", auth.signature);
+    formData.append("token", auth.token);
+    formData.append("expire", String(auth.expire));
+    formData.append("folder", "products");
+    formData.append("useUniqueFileName", "true");
+
+    const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new Error(err.message ?? "Upload failed");
+    }
+    const data = (await res.json()) as { url: string };
+    return data.url;
+  };
+
+  const usePhoto = async () => {
+    if (!capturedImage) return;
+    setUploading(true);
+    try {
+      const url = await uploadToImageKit(capturedImage);
+      setForm((f) => ({ ...f, image_url: url }));
+      stopCamera();
+    } catch {
+      showToast("Failed to save photo.", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const url = await uploadToImageKit(file);
+      setForm((f) => ({ ...f, image_url: url }));
+    } catch {
+      showToast("Failed to upload image.", "error");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const categoryNames = categories.map((c) => c.name);
@@ -241,14 +359,58 @@ export default function Products() {
                   </option>
                 ))}
               </select>
-              <input
-                placeholder="Image URL"
-                value={form.image_url}
-                onChange={(e) =>
-                  setForm({ ...form, image_url: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-500"
-              />
+              <div className="space-y-2">
+                {form.image_url && (
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      src={form.image_url}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, image_url: "" })}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={openCamera}
+                    disabled={uploading}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    📷 Take Photo
+                  </button>
+                  <label
+                    className={`flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition text-center ${
+                      uploading
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    {uploading ? "Uploading…" : "🖼 Upload"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={handleFileUpload}
+                    />
+                  </label>
+                </div>
+                <input
+                  placeholder="Or paste image URL"
+                  value={form.image_url}
+                  onChange={(e) =>
+                    setForm({ ...form, image_url: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-3 mt-5">
               <button
@@ -414,6 +576,67 @@ export default function Products() {
           </tbody>
         </table>
       </div>
+
+      {/* Camera Modal */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl overflow-hidden w-full max-w-md">
+            <div className="bg-black aspect-video flex items-center justify-center">
+              {capturedImage ? (
+                <img
+                  src={capturedImage}
+                  alt="Captured"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+            <canvas ref={canvasRef} className="hidden" />
+            <div className="p-4 flex gap-3 justify-center">
+              {capturedImage ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCapturedImage(null)}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    type="button"
+                    onClick={usePhoto}
+                    disabled={uploading}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading ? "Uploading…" : "Use Photo"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                >
+                  📷 Capture
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
